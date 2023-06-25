@@ -1,17 +1,26 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 
 class JobSitesAPI(ABC):
-    pass
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def get_vacancies(self, user_search_params: dict) -> list:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def convert_params_user_to_api(user_search_params: dict) -> dict:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def convert_response_to_vacancies(response):
+        pass
+
+
 # TODO подключение к API
 
 # TODO получение вакансий
-
-
-class HeadHunterAPI(JobSitesAPI):
-    pass
-
-
-class SuperJobAPI(JobSitesAPI):
-    pass
-
