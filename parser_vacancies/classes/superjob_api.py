@@ -6,6 +6,7 @@ import time
 import requests
 
 from parser_vacancies.classes.job_sites_api import JobSitesAPI
+from parser_vacancies.classes.vacancy import Vacancy
 
 
 class SuperJobAPI(JobSitesAPI):
@@ -72,11 +73,35 @@ class SuperJobAPI(JobSitesAPI):
 
         return api_search_params
 
-    @staticmethod
-    def convert_response_to_vacancies(response):
+    def convert_response_to_vacancies(self, response):
         """Преобразует ответ, полученный от API, в список элементов класса Vacancy"""
-        # TODO сделать метод
-        pass
+        response = response.json()['objects']
+        vacancies = []
+        for item in response:
+            vacancy_id = 'sj' + str(item['id'])
+            title = item['profession']
+            url = item['link']
+            description = item['vacancyRichText']
+            if item['payment_from'] == 0:
+                payment_from = None
+            else:
+                payment_from = item['payment_from']
+            if item['payment_to'] == 0:
+                payment_to = None
+            else:
+                payment_to = item['payment_to']
+            if item['place_of_work']['id'] == 2:
+                distant_work = True
+            else:
+                distant_work = False
+            date_published = datetime.fromtimestamp(item['date_published']).strftime('%Y-%m-%d')
+            town = item['town']['title']
+
+            vacancy = Vacancy(vacancy_id, title, url, description,
+                              payment_from, payment_to, distant_work,
+                              date_published, town)
+            vacancies.append(vacancy)
+        return vacancies
 
 
 #   РАБОЧЕЕ ДЛЯ ОТЛАДКИ
@@ -88,7 +113,7 @@ class SuperJobAPI(JobSitesAPI):
 #                       'day_from': int,
 #                       }
 #
-# sj_api = SuperJobAPI()
+sj_api = SuperJobAPI()
 # params = {'town': 4,  # место расположения офиса
 #           'keywords': None,  # ключевые слова поиска [слово1, слово2]
 #           'place_of_work': None,  # 1 — на территории работодателя, 2 — на дому, 3 — разъездного характера
@@ -98,16 +123,18 @@ class SuperJobAPI(JobSitesAPI):
 #           'date_published_from': None,  # вакансии с даты (unixtime)
 #           'count': 100
 #           }
-# user_search_params = {'town': 1,
-#                       'keywords': 'python',
-#                       'payment': 50_000,
-#                       'only_with_payment': True,
-#                       'distant_work': True,
-#                       'day_from': 3,
-#                       }
+user_search_params = {'town': 4,
+                      'keywords': 'python',
+                      'payment': None,
+                      'only_with_payment': None,
+                      'distant_work': None,
+                      'day_from': None,
+                      }
 # print(json.dumps(sj_api.convert_params_user_to_api(user_search_params), indent=2))
-# vacancies = sj_api.get_vacancies(params)
+vacancies = sj_api.get_vacancies(user_search_params)
 # for item in vacancies['objects']:
 #     print(json.dumps(item, indent=2, ensure_ascii=False))
 #     print('-' * 50)
-# # print(json.dumps(vacancies, indent=2, ensure_ascii=False))
+# print(json.dumps(vacancies, indent=2, ensure_ascii=False))
+print(len(vacancies))
+print(vacancies[10])

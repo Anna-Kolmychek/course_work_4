@@ -15,9 +15,8 @@ class JobSitesAPI(ABC):
     def convert_params_user_to_api(user_search_params: dict) -> dict:
         pass
 
-    @staticmethod
     @abstractmethod
-    def convert_response_to_vacancies(response):
+    def convert_response_to_vacancies(self, response):
         pass
 
 

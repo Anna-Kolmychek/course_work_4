@@ -4,6 +4,7 @@ from datetime import timedelta, datetime
 import requests
 
 from parser_vacancies.classes.job_sites_api import JobSitesAPI
+from parser_vacancies.classes.vacancy import Vacancy
 
 
 class HeadHunterAPI(JobSitesAPI):
@@ -69,14 +70,39 @@ class HeadHunterAPI(JobSitesAPI):
 
         return api_search_params
 
-    @staticmethod
-    def convert_response_to_vacancies(response):
+    def convert_response_to_vacancies(self, response):
         """Преобразует ответ, полученный от API, в список элементов класса Vacancy"""
-        # TODO сделать метод
-        pass
+        response = response.json()['items']
+        vacancies = []
+        for item in response:
+            vacancy_id = 'hh' + item['id']
+            title = item['name']
+            url = item['alternate_url']
+            description = self.get_vacancy_description(item['id'])
+            payment_from = item['salary']['from']
+            payment_to = item['salary']['to']
+            if item['schedule'] == 'remote':
+                distant_work = True
+            else:
+                distant_work = False
+            date_published = item['published_at'][:10]
+            town = item['area']['name']
+
+            vacancy = Vacancy(vacancy_id, title, url, description,
+                              payment_from, payment_to, distant_work,
+                              date_published, town)
+            vacancies.append(vacancy)
+        return vacancies
+
+    def get_vacancy_description(self, vacancy_id):
+        """Получает полное описание вакансии через запрос к вакансии по id"""
+        response = requests.get(self._request_url + f'vacancies/{vacancy_id}',
+                                headers=self._request_headers)
+        return response.json()['description']
+
 
 #   РАБОЧЕЕ ДЛЯ ОТЛАДКИ
-# hh_api = HeadHunterAPI()
+hh_api = HeadHunterAPI()
 # params = {'area': 1,  # место расположения офиса
 #           'text': None,  # ключевые слова поиска
 #           'schedule': None,  # удаленная работа = 'remote'
@@ -86,16 +112,26 @@ class HeadHunterAPI(JobSitesAPI):
 #           'per_page': 100
 #           }
 #
-# user_search_params = {'town': 1,
-#                       'keywords': 'python',
-#                       'payment': 50_000,
-#                       'only_with_payment': True,
-#                       'distant_work': True,
-#                       'day_from': 3,
-#                       }
+user_search_params = {'town': 1,
+                      'keywords': 'python',
+                      'payment': 50_000,
+                      'only_with_payment': True,
+                      'distant_work': True,
+                      'day_from': 3,
+                      }
 # print(json.dumps(hh_api.convert_params_user_to_api(user_search_params), indent=2))
-# vacancies = hh_api.get_vacancies(params)
+vacancies = hh_api.get_vacancies(user_search_params)
+print(vacancies[1])
 # for item in vacancies['items']:
 #     print(json.dumps(item, indent=2, ensure_ascii=False))
 #     print('-' * 50)
 # print(json.dumps(vacancies, indent=2, ensure_ascii=False))
+
+# request_headers = {'HH-User-Agent': 'parser_vacancies/1.0 (a.kolmychek@gmail.com)',
+#                          'Connection': 'close',
+#                          }
+# request_url = 'https://api.hh.ru/'
+#
+# response = requests.get(request_url + 'vacancies/82346986',
+#                         headers=request_headers)
+# print(json.dumps(response.json(),indent=2, ensure_ascii=False))
