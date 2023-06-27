@@ -15,7 +15,7 @@ class Vacancy:
         self.distant_work = distant_work
         self.date_published = date_published
         self.town = town
-        self.payment_average = self.get_payment_average()
+        self.payment_for_sort = self.get_payment_for_sort()
 
     def __repr__(self):
         return f'Vacancy(vacancy_id={self.vacancy_id},\n' \
@@ -29,7 +29,8 @@ class Vacancy:
                f'        town={self.town})'
 
     def __str__(self):
-        vacancy_text = f'Вакансия "{self.title}"\n' \
+        vacancy_text = f'--------------------------\n' \
+                       f'{self.title}\n' \
                        f'Ссылка: {self.url}\n' \
                        f'Описание: {self.description[:50]}…\n'
         if self.payment_from is not None:
@@ -44,22 +45,39 @@ class Vacancy:
                         f'Работа в городе {self.town}\n'
         if self.distant_work:
             vacancy_text += 'Есть возможность удаленной работы\n'
-        vacancy_text += f'Дата публикации {self.date_published}'
+        vacancy_text += f'Дата публикации {self.date_published}\n' \
+                        f'--------------------------'
         return vacancy_text
 
-    def get_payment_average(self):
-        """Расчет сердней ЗП для сравнения вакансий по ЗП"""
-        payment_average = 0
+    def short_str(self):
+        """короткая версия метода str для вывода вакансии в консоль"""
+        vacancy_text = f'--------------------------\n'\
+                       f'{self.title}\n' \
+                       f'Ссылка: {self.url}\n'
+        if self.payment_from is not None:
+            payment_from = self.payment_from
+        else:
+            payment_from = '—'
+        if self.payment_to is not None:
+            payment_to = self.payment_to
+        else:
+            payment_to = '—'
+        vacancy_text += f'ЗП от {payment_from} до {payment_to}\n' \
+                        f'Дата публикации {self.date_published}\n' \
+                        f'--------------------------'
+        return vacancy_text
 
-        try:
-            payment_average = (self.payment_from + self.payment_to) / 2
-        except Exception:
-            if self.payment_from is not None:
-                payment_average = self.payment_from
-            elif self.payment_to is not None:
-                payment_average = self.payment_to
+    def get_payment_for_sort(self):
+        """Расчет ЗП для сортировки вакансий по ЗП.
+        Отталкиваемся от бОльшей ЗП, если ее нет – то переходим к минимальной.
+        Если и ее нет – устанавливаем 0"""
 
-        return payment_average
+        if self.payment_to is not None:
+            return self.payment_to
+        elif self.payment_from is not None:
+            return self.payment_from
+        else:
+            return 0
 
 
 # TODO валидация данные, которыми инициализируются атрибуты
