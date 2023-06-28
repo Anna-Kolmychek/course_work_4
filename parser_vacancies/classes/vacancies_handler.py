@@ -1,10 +1,10 @@
 from parser_vacancies.classes.vacancy import Vacancy
 
 
-class HandlerVacancies:
+class VacanciesHandler:
     """Класс для обработки списка вакансий"""
 
-    def __init__(self, vacansies):
+    def __init__(self, vacansies=[]):
         self.vacancies = vacansies
 
     def __iter__(self):
@@ -23,8 +23,10 @@ class HandlerVacancies:
 
     def __str__(self):
         """печать экземпляра класса"""
+        result = ''
         for vacancy in self.vacancies:
-            print(vacancy)
+            result += str(vacancy)
+        return result
 
     def sort_by_payment(self):
         """сортирует элементы по ЗП: от большей к меньшей"""
@@ -91,6 +93,10 @@ class HandlerVacancies:
         """добавляет в список вакансий другой список"""
         self.vacancies.extend(vacancies)
 
+    def append(self, vacancy):
+        """добавляет одну вакаесияю в список вакансий"""
+        self.vacancies.append(vacancy)
+
 
 # РАБОЧЕЕ ДЛЯ ПРОВЕРКИ
 vacancy1 = Vacancy('hhvacancy_id1', 'title1', 'url1', 'description1',
@@ -105,9 +111,10 @@ vacancy3 = Vacancy('sjvacancy_id3', 'tile3', 'url3', 'description3',
                    None, None, True,
                    '2023-06-26', 'town3')
 
-vacancies = HandlerVacancies([vacancy1, vacancy2, vacancy3])
+vacancies = VacanciesHandler([vacancy1, vacancy2, vacancy3])
 
-vacancies.replace([vacancy3, vacancy1])
-vacancies.extend([vacancy2, vacancy2])
-for vacancy in vacancies:
-    print(vacancy)
+# print(str(vacancies))
+# vacancies.replace([vacancy3, vacancy1])
+# vacancies.extend([vacancy2, vacancy2])
+# for vacancy in vacancies:
+#     print(vacancy)

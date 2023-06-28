@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 
@@ -91,4 +92,4 @@ vacancy = Vacancy('vacancy_id', 'title', 'url', 'description',
                  20, None, False,
                  '2023-05-03', 'town')
 
-# print(vacancy)
+# print(json.dumps(vacancy.__dict__, indent=2))
