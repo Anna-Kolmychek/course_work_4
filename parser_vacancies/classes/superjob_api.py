@@ -19,7 +19,7 @@ class SuperJobAPI(JobSitesAPI):
         self._request_url = 'https://api.superjob.ru/2.0/'
         # Подсказка по параметрам поиска в API
         # self._params = {'town': None,  # место расположения
-        #                 'keywords': None,  # ключевые слова поиска [слово1, слово2]
+        #                 'keywords': None,  # ключевые слова поиска
         #                 'place_of_work': None,  # место работы: 2 - на дому
         #                 'payment_from': None,  # ЗП от
         #                 'no_agreement': None,  # 1 – только с указанием ЗП
@@ -35,18 +35,22 @@ class SuperJobAPI(JobSitesAPI):
                                 headers=self._request_headers,
                                 params=api_search_params)
         vacancies = self.convert_response_to_vacancies(response)
+
         return vacancies
 
-    @staticmethod
-    def convert_params_user_to_api(user_search_params: dict) -> dict:
+    def convert_params_user_to_api(self, user_search_params: dict) -> dict:
         """Преобразует пользовательские параметры в формат, подходящий для API"""
 
         # поиск на 100 вакансий
         api_search_params = {'count': 100}
 
-        # задаем расположение (по id)
+        # задаем расположение (преобразуем текст в id)
         if user_search_params.get('town') is not None:
-            api_search_params['town'] = user_search_params['town']
+            town_id = self.convert_town_to_number(user_search_params['town'])
+            if town_id is not None:
+                api_search_params['town'] = town_id
+            else:
+                api_search_params['town'] = -1
 
         # задаем ключевые слова
         if user_search_params.get('keywords') is not None:
@@ -71,7 +75,27 @@ class SuperJobAPI(JobSitesAPI):
             date_from = datetime.today() - timedelta(days=user_search_params['day_from'])
             api_search_params['date_published_from'] = time.mktime(date_from.timetuple())
 
+        print(api_search_params)
         return api_search_params
+
+    def convert_town_to_number(self, name):
+        """переводит текстовое название города или региона в id согласно слорю"""
+
+        # Ищем в регионах
+        response = requests.get(self._request_url + 'regions/?keyword=' + name,
+                                headers=self._request_headers)
+        for item in response.json()['objects']:
+            if item['title'] == name:
+                return item['id']
+
+        # Ищем в городах
+        response = requests.get(self._request_url + 'towns/?keyword=' + name,
+                                headers=self._request_headers)
+        for item in response.json()['objects']:
+            if item['title'] == name:
+                return item['id']
+
+        return None
 
     def convert_response_to_vacancies(self, response):
         """Преобразует ответ, полученный от API, в список элементов класса Vacancy"""
@@ -81,7 +105,10 @@ class SuperJobAPI(JobSitesAPI):
             vacancy_id = 'sj' + str(item['id'])
             title = item['profession']
             url = item['link']
-            description = item['vacancyRichText']
+            try:
+                description = item['candidat'].replace('\n', ' ')
+            except Exception:
+                description = ''
             if item['payment_from'] == 0:
                 payment_from = None
             else:
@@ -114,6 +141,7 @@ class SuperJobAPI(JobSitesAPI):
 #                       }
 #
 sj_api = SuperJobAPI()
+# print(sj_api.convert_town_to_number('Московская область'))
 # params = {'town': 4,  # место расположения офиса
 #           'keywords': None,  # ключевые слова поиска [слово1, слово2]
 #           'place_of_work': None,  # 1 — на территории работодателя, 2 — на дому, 3 — разъездного характера
@@ -123,18 +151,20 @@ sj_api = SuperJobAPI()
 #           'date_published_from': None,  # вакансии с даты (unixtime)
 #           'count': 100
 #           }
-user_search_params = {'town': 4,
-                      'keywords': 'python',
+user_search_params = {'town': 'Химки',
+                      'keywords': None,
                       'payment': None,
                       'only_with_payment': None,
                       'distant_work': None,
                       'day_from': None,
                       }
+
+
 # print(json.dumps(sj_api.convert_params_user_to_api(user_search_params), indent=2))
-vacancies = sj_api.get_vacancies(user_search_params)
-# for item in vacancies['objects']:
-#     print(json.dumps(item, indent=2, ensure_ascii=False))
+# vacancies = sj_api.get_vacancies(user_search_params)
+# for item in vacancies:
+#     print(item)
 #     print('-' * 50)
 # print(json.dumps(vacancies, indent=2, ensure_ascii=False))
-print(len(vacancies))
-print(vacancies[10])
+# print(len(vacancies))
+# print(vacancies[10])

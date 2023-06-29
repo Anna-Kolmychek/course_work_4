@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta, datetime
+from time import sleep
 
 import requests
 
@@ -35,16 +36,20 @@ class HeadHunterAPI(JobSitesAPI):
         vacancies = self.convert_response_to_vacancies(response)
         return vacancies
 
-    @staticmethod
-    def convert_params_user_to_api(user_search_params: dict) -> dict:
+    def convert_params_user_to_api(self, user_search_params: dict) -> dict:
         """Преобразует пользовательские параметры в формат, подходящий для API"""
 
         # поиск на 100 вакансий
         api_search_params = {'per_page': 100}
 
-        # задаем расположение (по id)
+        # задаем расположение (преобразуем текст в id)
         if user_search_params.get('town') is not None:
-            api_search_params['area'] = user_search_params['town']
+            town_id = self.convert_town_to_number(user_search_params['town'])
+            if town_id is not None:
+                api_search_params['area'] = town_id
+            else:
+                api_search_params['area'] = 0
+
 
         # задаем ключевые слова
         if user_search_params.get('keywords') is not None:
@@ -70,17 +75,55 @@ class HeadHunterAPI(JobSitesAPI):
 
         return api_search_params
 
+    def convert_town_to_number(self, town):
+        """переводит текстовое название региона в id согласно слорю api
+        работаем только в России, при желании можно расширить"""
+
+        response = requests.get(self._request_url + 'areas/countries',
+                                headers=self._request_headers)
+        for item in response.json():
+            if item['name'] == 'Россия':
+                rus_id = item['id']
+                break
+
+        response = requests.get(self._request_url + 'areas/' + rus_id,
+                                headers=self._request_headers)
+
+        town_id = self.get_area_id(response.json()['areas'], town)
+        return town_id
+
+    def get_area_id(self, data, name):
+        """рекурсивная функция для поиска региона на всех уровнях вложения"""
+        for item in data:
+            if item['name'] == name:
+                return item['id']
+            elif len(item['areas']) != 0:
+                town_id = self.get_area_id(item['areas'], name)
+                if town_id is not None:
+                    return town_id
+
     def convert_response_to_vacancies(self, response):
         """Преобразует ответ, полученный от API, в список элементов класса Vacancy"""
-        response = response.json()['items']
+
+        try:
+            response = response.json()['items']
+        except Exception:
+            return []
         vacancies = []
         for item in response:
             vacancy_id = 'hh' + item['id']
             title = item['name']
             url = item['alternate_url']
-            description = self.get_vacancy_description(item['id'])
-            payment_from = item['salary']['from']
-            payment_to = item['salary']['to']
+            description = f'Обязанности: ' \
+                          f'{item["snippet"]["responsibility"]}' \
+                          f'Требования:' \
+                          f'{item["snippet"]["requirement"]}'
+            try:
+                payment_from = item['salary']['from']
+                payment_to = item['salary']['to']
+            except Exception:
+                payment_from = None
+                payment_to = None
             if item['schedule'] == 'remote':
                 distant_work = True
             else:
@@ -94,11 +137,11 @@ class HeadHunterAPI(JobSitesAPI):
             vacancies.append(vacancy)
         return vacancies
 
-    def get_vacancy_description(self, vacancy_id):
-        """Получает полное описание вакансии через запрос к вакансии по id"""
-        response = requests.get(self._request_url + f'vacancies/{vacancy_id}',
-                                headers=self._request_headers)
-        return response.json()['description']
+    # def get_vacancy_description(self, vacancy_id):
+    #     """Получает полное описание вакансии через запрос к вакансии по id"""
+    #     response = requests.get(self._request_url + f'vacancies/{vacancy_id}',
+    #                             headers=self._request_headers)
+    #     return response.json()['description']
 
 
 #   РАБОЧЕЕ ДЛЯ ОТЛАДКИ
@@ -112,19 +155,17 @@ hh_api = HeadHunterAPI()
 #           'per_page': 100
 #           }
 #
-user_search_params = {'town': 1,
-                      'keywords': 'python',
+user_search_params = {'town': 'Московская область',
+                      'keywords': '',
                       'payment': 50_000,
-                      'only_with_payment': True,
+                      'only_with_payment': False,
                       'distant_work': True,
-                      'day_from': 3,
+                      'day_from': 1,
                       }
 # print(json.dumps(hh_api.convert_params_user_to_api(user_search_params), indent=2))
-vacancies = hh_api.get_vacancies(user_search_params)
-print(vacancies[1])
-# for item in vacancies['items']:
-#     print(json.dumps(item, indent=2, ensure_ascii=False))
-#     print('-' * 50)
+# vacancies = hh_api.get_vacancies(user_search_params)
+# for item in vacancies:
+#     print(item)
 # print(json.dumps(vacancies, indent=2, ensure_ascii=False))
 
 # request_headers = {'HH-User-Agent': 'parser_vacancies/1.0 (a.kolmychek@gmail.com)',
@@ -135,3 +176,4 @@ print(vacancies[1])
 # response = requests.get(request_url + 'vacancies/82346986',
 #                         headers=request_headers)
 # print(json.dumps(response.json(),indent=2, ensure_ascii=False))
+# hh_api.convert_town_to_number('Московская областьфвыа')
