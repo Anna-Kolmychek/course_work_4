@@ -5,6 +5,7 @@ from time import sleep
 import requests
 
 from parser_vacancies.classes.job_sites_api import JobSitesAPI
+from parser_vacancies.classes.vacancies_handler import VacanciesHandler
 from parser_vacancies.classes.vacancy import Vacancy
 
 
@@ -94,6 +95,7 @@ class HeadHunterAPI(JobSitesAPI):
 
     def get_area_id(self, data, name):
         """рекурсивная функция для поиска региона на всех уровнях вложения"""
+        name = name.title()
         for item in data:
             if item['name'] == name:
                 return item['id']
@@ -109,7 +111,7 @@ class HeadHunterAPI(JobSitesAPI):
             response = response.json()['items']
         except Exception:
             return []
-        vacancies = []
+        vacancies = VacanciesHandler([])
         for item in response:
             vacancy_id = 'hh' + item['id']
             title = item['name']
@@ -155,15 +157,10 @@ hh_api = HeadHunterAPI()
 #           'per_page': 100
 #           }
 #
-user_search_params = {'town': 'Московская область',
-                      'keywords': '',
-                      'payment': 50_000,
-                      'only_with_payment': False,
-                      'distant_work': True,
-                      'day_from': 1,
+user_search_params = {'distant_work': True,
                       }
 # print(json.dumps(hh_api.convert_params_user_to_api(user_search_params), indent=2))
-# vacancies = hh_api.get_vacancies(user_search_params)
+vacancies = hh_api.get_vacancies(user_search_params)
 # for item in vacancies:
 #     print(item)
 # print(json.dumps(vacancies, indent=2, ensure_ascii=False))

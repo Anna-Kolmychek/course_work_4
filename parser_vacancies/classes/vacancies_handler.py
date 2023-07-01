@@ -1,10 +1,12 @@
+from datetime import datetime, timedelta
+
 from parser_vacancies.classes.vacancy import Vacancy
 
 
 class VacanciesHandler:
     """Класс для обработки списка вакансий"""
 
-    def __init__(self, vacansies=[]):
+    def __init__(self, vacansies):
         self.vacancies = vacansies
 
     def __iter__(self):
@@ -28,6 +30,9 @@ class VacanciesHandler:
             result += str(vacancy)
         return result
 
+    def __len__(self):
+        return len(self.vacancies)
+
     def sort_by_payment(self):
         """сортирует элементы по ЗП: от большей к меньшей"""
         self.vacancies.sort(key=lambda vacancy: vacancy.payment_for_sort, reverse=True)
@@ -36,19 +41,45 @@ class VacanciesHandler:
         """сортирует элементы по дате публикации вакансий: от новых к старым"""
         self.vacancies.sort(key=lambda vacancy: vacancy.date_published, reverse=True)
 
-    def filter_by_keyword(self, keyword):
-        """фильтрует список вакансий, оставляя только те, в названии или описании которых есть слово keword"""
+    def filter_by_town(self, town):
+        """фильтрует список вакансий, оставляя только те, расположение которых совпадает с town"""
         new_vacancies = []
+        town = town.lower()
         for vacancy in self.vacancies:
-            if keyword in vacancy.title + vacancy.description:
+            if vacancy.town.lower() == town:
                 new_vacancies.append(vacancy)
         self.vacancies = new_vacancies
 
-    def filter_by_site(self, site):
-        """фильтрует список вакансий, оставляя только те, которые пришли с site (hh | sj)"""
+    def filter_by_keyword(self, keyword):
+        """фильтрует список вакансий, оставляя только те, в названии или описании которых есть слово keword"""
+        new_vacancies = []
+        keyword = keyword.lower().strip()
+        for vacancy in self.vacancies:
+            if keyword in vacancy.title.lower() + vacancy.description.lower():
+                new_vacancies.append(vacancy)
+        self.vacancies = new_vacancies
+
+    def filter_by_payment(self, payment):
+        """фильтрует список вакансий, оставляя только те,
+        в которых payment входит в вилку ЗП или ЗП не указана"""
         new_vacancies = []
         for vacancy in self.vacancies:
-            if vacancy.vacancy_id[:2] == site:
+            payment_key = True
+            if vacancy.payment_from is not None:
+                if vacancy.payment_from > payment:
+                    payment_key = False
+            if vacancy.payment_to is not None:
+                if vacancy.payment_to < payment:
+                    payment_key = False
+            if payment_key:
+                new_vacancies.append(vacancy)
+        self.vacancies = new_vacancies
+
+    def filter_only_with_payment(self):
+        """фильтрует список вакансий, оставляя только те, в которых указана ЗП"""
+        new_vacancies = []
+        for vacancy in self.vacancies:
+            if vacancy.payment_from is not None or vacancy.payment_to is not None:
                 new_vacancies.append(vacancy)
         self.vacancies = new_vacancies
 
@@ -57,6 +88,25 @@ class VacanciesHandler:
         new_vacancies = []
         for vacancy in self.vacancies:
             if vacancy.distant_work:
+                new_vacancies.append(vacancy)
+        self.vacancies = new_vacancies
+
+    def filter_by_day_from(self, day_from):
+        """фильтрует список вакансий, оставляя только те, которые опубликованы не более day_from дней назад"""
+        new_vacancies = []
+        date_from = datetime.today() - timedelta(days=day_from)
+        date_from = date_from.isoformat()
+        for vacancy in self.vacancies:
+            if vacancy.date_published >= date_from:
+                new_vacancies.append(vacancy)
+        self.vacancies = new_vacancies
+
+
+    def filter_by_site(self, site):
+        """фильтрует список вакансий, оставляя только те, которые пришли с site (hh | sj)"""
+        new_vacancies = []
+        for vacancy in self.vacancies:
+            if vacancy.vacancy_id[:2] == site:
                 new_vacancies.append(vacancy)
         self.vacancies = new_vacancies
 
@@ -89,9 +139,16 @@ class VacanciesHandler:
         """полностью меняет список вакансий на новый"""
         self.vacancies = vacancies
 
-    def extend(self, vacancies):
+    def remove(self):
+        """очищает список вакансий"""
+        self.vacancies = []
+
+    def extend(self, new_vacancies):
         """добавляет в список вакансий другой список"""
-        self.vacancies.extend(vacancies)
+        try:
+            self.vacancies.extend(new_vacancies.vacancies)
+        except Exception:
+            pass
 
     def append(self, vacancy):
         """добавляет одну вакаесияю в список вакансий"""

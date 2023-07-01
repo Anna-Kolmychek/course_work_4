@@ -41,7 +41,7 @@ class JSONFileHandler(FileHandler):
     @staticmethod
     def convert_data_to_vacancies(data) -> VacanciesHandler:
         """переводит данные из формата, полученного из файла, в формат VacanciesHandler"""
-        vacancies = VacanciesHandler()
+        vacancies = VacanciesHandler([])
         for item in data:
             vacancy = Vacancy(item['vacancy_id'],
                               item['title'],
@@ -86,8 +86,8 @@ vacancy3 = Vacancy('sjvacancy_id3', 'tile3', 'url3', 'description3',
                    None, None, True,
                    '2023-06-26', 'town3')
 
-vacancies = VacanciesHandler([vacancy1, vacancy2, vacancy3])
-json_fh = JSONFileHandler('test1')
-json_fh.overwrite_vacancies(vacancies)
-vacancies2 = VacanciesHandler(json_fh.read_vacancies())
-print(vacancies2)
+# vacancies = VacanciesHandler([vacancy1, vacancy2, vacancy3])
+# json_fh = JSONFileHandler('test1')
+# json_fh.overwrite_vacancies(vacancies)
+# vacancies2 = VacanciesHandler(json_fh.read_vacancies())
+# print(vacancies2)

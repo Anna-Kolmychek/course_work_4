@@ -6,6 +6,7 @@ import time
 import requests
 
 from parser_vacancies.classes.job_sites_api import JobSitesAPI
+from parser_vacancies.classes.vacancies_handler import VacanciesHandler
 from parser_vacancies.classes.vacancy import Vacancy
 
 
@@ -75,12 +76,11 @@ class SuperJobAPI(JobSitesAPI):
             date_from = datetime.today() - timedelta(days=user_search_params['day_from'])
             api_search_params['date_published_from'] = time.mktime(date_from.timetuple())
 
-        print(api_search_params)
         return api_search_params
 
     def convert_town_to_number(self, name):
         """переводит текстовое название города или региона в id согласно слорю"""
-
+        name = name.title()
         # Ищем в регионах
         response = requests.get(self._request_url + 'regions/?keyword=' + name,
                                 headers=self._request_headers)
@@ -100,7 +100,7 @@ class SuperJobAPI(JobSitesAPI):
     def convert_response_to_vacancies(self, response):
         """Преобразует ответ, полученный от API, в список элементов класса Vacancy"""
         response = response.json()['objects']
-        vacancies = []
+        vacancies = VacanciesHandler([])
         for item in response:
             vacancy_id = 'sj' + str(item['id'])
             title = item['profession']
