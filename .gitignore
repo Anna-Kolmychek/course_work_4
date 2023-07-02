@@ -1,3 +1,4 @@
 .idea/
 __pycache__/
 parser_vacancies/data/
+poetry.lock

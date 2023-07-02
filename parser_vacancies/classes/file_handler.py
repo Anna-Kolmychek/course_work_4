@@ -56,5 +56,3 @@ class FileHandler(ABC):
 
 
 
-class ExcelFileHandler(FileHandler):
-    pass

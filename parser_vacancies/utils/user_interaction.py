@@ -8,6 +8,7 @@ import os.path
 from os import listdir
 from os.path import isfile
 
+from parser_vacancies.classes.excel_file_handler import ExcelFileHandler
 from parser_vacancies.classes.headhunter_api import HeadHunterAPI
 from parser_vacancies.classes.json_file_handler import JSONFileHandler
 from parser_vacancies.classes.superjob_api import SuperJobAPI
@@ -87,7 +88,7 @@ def get_vacancies():
         params = get_filter_params('123456')
         vacancies_place = set(vacancies_place)
         for num in vacancies_place:
-            temp_vacancies = None
+            temp_vacancies = []
             if num == '1':
                 temp_vacancies = get_vacancies_from_hh(params)
                 platform_name = ['c HH', 'На HH']
@@ -160,12 +161,12 @@ def write_vacancies_in_file():
             file_name = user_file_name[:-5]
             file_handler = JSONFileHandler(file_name)
             break
-        # elif user_file_name.endswith('.xls'):
-        #     file_name = user_file_name[:-4]
-        #     file_handler = ExcelFileHandler(file_name)
-        #     break
+        elif user_file_name.endswith('.xlsx'):
+            file_name = user_file_name[:-5]
+            file_handler = ExcelFileHandler(file_name)
+            break
         else:
-            print('Поддерживаются только файлы .json или .xls')
+            print('Поддерживаются только файлы .json или .xlsx')
             continue
     if file_handler.is_file_exist():
         user_input = input('Такой файл уже существует\n'
@@ -177,7 +178,7 @@ def write_vacancies_in_file():
             file_handler.add_vacancies(vacancies)
     else:
         file_handler.overwrite_vacancies(vacancies)
-    print('-' * 10, f'Вакансии записаны в файл {user_file_name}', '-' * 10)
+    print('-' * 10, f'Работа с файлом {user_file_name} завершена', '-' * 10)
 
 
 def remove_vacancies():
@@ -276,11 +277,10 @@ def get_vacancies_from_sj(params):
 def get_vacancies_from_file(params):
     file_handler = get_file_for_read()
     if file_handler is not None:
-        if file_handler is not None:
-            file_vacancies = file_handler.read_vacancies()
-            file_vacancies = filter_vacancies_by_params(file_vacancies, params)
+        file_vacancies = file_handler.read_vacancies()
+        file_vacancies = filter_vacancies_by_params(file_vacancies, params)
         return file_vacancies
-
+    return []
 
 def get_file_for_read():
     is_good_file = False
@@ -296,11 +296,11 @@ def get_file_for_read():
         if user_file_name.endswith('.json'):
             file_name = user_file_name[:-5]
             file_handler = JSONFileHandler(file_name)
-        # elif user_file_name.endswith('.xls'):
-        #     file_name = user_file_name[:-4]
-        #     file_handler = ExcelFileHandler(file_name)
+        elif user_file_name.endswith('.xlsx'):
+            file_name = user_file_name[:-5]
+            file_handler = ExcelFileHandler(file_name)
         else:
-            print('Поддерживаются только файлы .json или .xls')
+            print('Поддерживаются только файлы .json или .xlsx')
             continue
         is_good_file = file_handler.is_file_exist()
         if not is_good_file:
@@ -316,7 +316,7 @@ def get_file_for_read():
         return None
 
 def print_files_list():
-    files_list = [f for f in listdir(DATA_DIR) if f.endswith('.json') or f.endswith('.xls')]
+    files_list = [f for f in listdir(DATA_DIR) if f.endswith('.json') or f.endswith('.xlsx')]
     if len(files_list) == 0:
         print('Доступных файлов нет')
     else:
