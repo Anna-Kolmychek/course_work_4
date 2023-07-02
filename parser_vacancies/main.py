@@ -1,6 +1,5 @@
-import parser_vacancies.utils.user_interaction
+from parser_vacancies.utils.user_interaction import user_interaction
 
 if __name__ == '__main__':
-    pass
-    # TODO запуск взаимодействия с пользователем
+    user_interaction()
 

@@ -1,6 +1,4 @@
-import json
 from datetime import timedelta, datetime
-from time import sleep
 
 import requests
 
@@ -10,6 +8,7 @@ from parser_vacancies.classes.vacancy import Vacancy
 
 
 class HeadHunterAPI(JobSitesAPI):
+    """Класс для работы с HeadHunter API"""
     def __init__(self):
         """Инициализация HH_API, задаем headers и базовый url для работы с API"""
         self._request_headers = {'HH-User-Agent': 'parser_vacancies/1.0 (a.kolmychek@gmail.com)',
@@ -17,7 +16,7 @@ class HeadHunterAPI(JobSitesAPI):
                                  }
         self._request_url = 'https://api.hh.ru/'
 
-    # Подсказка по параметрам поиска в API
+    # Подсказка по используемым параметрам поиска в API
     # self._params = {'area': None,  # место расположения офиса
     #                 'text': None,  # ключевые слова поиска
     #                 'schedule': None,  # удаленная работа = 'remote'
@@ -27,9 +26,9 @@ class HeadHunterAPI(JobSitesAPI):
     #                 'per_page': 100,  # максимальное количество вакансий
     #                 }
 
-    def get_vacancies(self, user_search_params: dict) -> list | None:
-        """Получает по api вакансии по заданным параметрам,
-           возвращает список из элементов класса Vacancy"""
+    def get_vacancies(self, user_search_params: dict) -> VacanciesHandler:
+        """Получает по API вакансии с заданными параметрами,
+           возвращает список вакансий в виде экзмемпляра класса VacanciesHandler"""
         api_search_params = self.convert_params_user_to_api(user_search_params)
         response = requests.get(self._request_url + 'vacancies',
                                 headers=self._request_headers,
@@ -40,7 +39,7 @@ class HeadHunterAPI(JobSitesAPI):
     def convert_params_user_to_api(self, user_search_params: dict) -> dict:
         """Преобразует пользовательские параметры в формат, подходящий для API"""
 
-        # поиск на 100 вакансий
+        # поиск на 100 вакансий - максимальное значение за раз
         api_search_params = {'per_page': 100}
 
         # задаем расположение (преобразуем текст в id)
@@ -51,7 +50,6 @@ class HeadHunterAPI(JobSitesAPI):
             else:
                 api_search_params['area'] = 0
 
-
         # задаем ключевые слова
         if user_search_params.get('keywords') is not None:
             api_search_params['text'] = user_search_params['keywords']
@@ -60,11 +58,11 @@ class HeadHunterAPI(JobSitesAPI):
         if user_search_params.get('payment') is not None:
             api_search_params['salary'] = user_search_params['payment']
 
-        # задаем фильтр: вакансии только с ЗП
+        # задаем фильтр – вакансии только с ЗП
         if user_search_params.get('only_with_payment') is not None:
             api_search_params['only_with_salary'] = user_search_params['only_with_payment']
 
-        # задаем фильтр: вакансии только с удаленной работой
+        # задаем фильтр – вакансии только с удаленной работой - для HH работает не совсем корректно
         if user_search_params.get('distant_work') is not None:
             if user_search_params['distant_work']:
                 api_search_params['schedule'] = 'remote'
@@ -77,8 +75,8 @@ class HeadHunterAPI(JobSitesAPI):
         return api_search_params
 
     def convert_town_to_number(self, town):
-        """переводит текстовое название региона в id согласно слорю api
-        работаем только в России, при желании можно расширить"""
+        """Преобразует текстовое название региона в id согласно словарю API.
+        Работаем только в России, при желании можно расширить"""
 
         response = requests.get(self._request_url + 'areas/countries',
                                 headers=self._request_headers)
@@ -94,7 +92,8 @@ class HeadHunterAPI(JobSitesAPI):
         return town_id
 
     def get_area_id(self, data, name):
-        """рекурсивная функция для поиска региона на всех уровнях вложения"""
+        """Рекурсивная функция для поиска региона на всех уровнях вложения словаря.
+        Специфично для HeadHunter API"""
         name = name.title()
         for item in data:
             if item['name'] == name:
@@ -105,8 +104,8 @@ class HeadHunterAPI(JobSitesAPI):
                     return town_id
 
     def convert_response_to_vacancies(self, response):
-        """Преобразует ответ, полученный от API, в список элементов класса Vacancy"""
-
+        """Преобразует ответ, полученный от API, в список вакансий,
+         представленный в виде экземпляра класса VacanciesHandler"""
         try:
             response = response.json()['items']
         except Exception:
@@ -139,38 +138,3 @@ class HeadHunterAPI(JobSitesAPI):
             vacancies.append(vacancy)
         return vacancies
 
-    # def get_vacancy_description(self, vacancy_id):
-    #     """Получает полное описание вакансии через запрос к вакансии по id"""
-    #     response = requests.get(self._request_url + f'vacancies/{vacancy_id}',
-    #                             headers=self._request_headers)
-    #     return response.json()['description']
-
-
-#   РАБОЧЕЕ ДЛЯ ОТЛАДКИ
-hh_api = HeadHunterAPI()
-# params = {'area': 1,  # место расположения офиса
-#           'text': None,  # ключевые слова поиска
-#           'schedule': None,  # удаленная работа = 'remote'
-#           'salary': None,  # желаемая зп
-#           'only_with_salary': True,  # только с указанием ЗП
-#           'date_from': None,  # вакансии с даты (ISO 8601 - YYYY-MM-DD)
-#           'per_page': 100
-#           }
-#
-user_search_params = {'distant_work': True,
-                      }
-# print(json.dumps(hh_api.convert_params_user_to_api(user_search_params), indent=2))
-vacancies = hh_api.get_vacancies(user_search_params)
-# for item in vacancies:
-#     print(item)
-# print(json.dumps(vacancies, indent=2, ensure_ascii=False))
-
-# request_headers = {'HH-User-Agent': 'parser_vacancies/1.0 (a.kolmychek@gmail.com)',
-#                          'Connection': 'close',
-#                          }
-# request_url = 'https://api.hh.ru/'
-#
-# response = requests.get(request_url + 'vacancies/82346986',
-#                         headers=request_headers)
-# print(json.dumps(response.json(),indent=2, ensure_ascii=False))
-# hh_api.convert_town_to_number('Московская областьфвыа')

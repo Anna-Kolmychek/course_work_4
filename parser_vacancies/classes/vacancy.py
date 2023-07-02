@@ -1,12 +1,9 @@
-import json
-from datetime import datetime
-
-
 class Vacancy:
+    """Класс для работы с одной вакансией"""
     def __init__(self, vacancy_id, title, url, description,
                  payment_from, payment_to, distant_work,
                  date_published, town):
-        """Инициализация вакансии данными """
+        """Инициализация вакансии данными"""
         self.vacancy_id = vacancy_id
         self.title = title
         self.url = url
@@ -30,6 +27,7 @@ class Vacancy:
                f'        town={self.town})'
 
     def __str__(self):
+        """Печать экземпляра класса"""
         vacancy_text = f'--------------------------\n' \
                        f'{self.title}\n' \
                        f'Ссылка: {self.url}\n' \
@@ -51,7 +49,7 @@ class Vacancy:
         return vacancy_text
 
     def short_str(self):
-        """короткая версия метода str для вывода вакансии в консоль"""
+        """Короткая версия метода str для вывода вакансии в консоль"""
         vacancy_text = f'--------------------------\n'\
                        f'{self.title}\n' \
                        f'Ссылка: {self.url}\n'
@@ -79,17 +77,3 @@ class Vacancy:
             return self.payment_from
         else:
             return 0
-
-
-# TODO валидация данные, которыми инициализируются атрибуты
-
-# TODO сравнения вакансий между собой по зарплате
-
-
-
-# РАБОЧЕЕ ДЛЯ ПРОВЕРКИ
-vacancy = Vacancy('vacancy_id', 'title', 'url', 'description',
-                 20, None, False,
-                 '2023-05-03', 'town')
-
-# print(json.dumps(vacancy.__dict__, indent=2))

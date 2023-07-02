@@ -1,16 +1,8 @@
-# TODO взаимодействие с пользователем через консоль
-#  позволет пользователю указать, с каких платформ он хочет получить вакансии,
-#  ввести поисковый запрос,
-#  получить топ N вакансий по зарплате,
-#  получить вакансии в отсортированном виде,
-#  получить вакансии, в описании которых есть определенные ключевые слова, например "postgres" и т. п.
-import os.path
 from os import listdir
-from os.path import isfile
 
 from parser_vacancies.classes.excel_file_handler import ExcelFileHandler
-from parser_vacancies.classes.headhunter_api import HeadHunterAPI
 from parser_vacancies.classes.json_file_handler import JSONFileHandler
+from parser_vacancies.classes.headhunter_api import HeadHunterAPI
 from parser_vacancies.classes.superjob_api import SuperJobAPI
 from parser_vacancies.classes.vacancies_handler import VacanciesHandler
 from parser_vacancies.constants import DATA_DIR
@@ -18,6 +10,7 @@ from parser_vacancies.constants import DATA_DIR
 vacancies = VacanciesHandler([])
 
 
+# Подсказка по пользовательским параметрам для поиска
 # user_filter_params = {'town': str,
 #                       'keywords': str,
 #                       'payment': int,
@@ -27,6 +20,8 @@ vacancies = VacanciesHandler([])
 #                       }
 
 def user_interaction():
+    """Главная функция взаимодействия с пользователем.
+    Показывает правила, организует выбор действия пользователя из основных."""
     show_rules()
     while True:
         action = get_user_action()
@@ -45,6 +40,7 @@ def user_interaction():
 
 
 def get_user_action():
+    """Получает выбранное пользователем действие."""
     if len(vacancies) == 0:
         user_input = input('\nСписок вакансий пуст. Хотите получить вакансии? (да/нет) ').lower()
         if user_input == 'да':
@@ -68,16 +64,21 @@ def get_user_action():
 
 
 def show_rules():
+    """Показывает основные правила использования программы."""
     print('Для завершения работы в любой момент введите слово "выход".')
     print('Для пропуска ввода параметров поиска или использования значений по умолчанию нажмите Enter.')
 
 
 def check_exit(user_input):
+    """Проверка на желание пользователя закончить работу.
+    Завершает работу программы при соответсвующем значении"""
     if user_input.lower() == 'выход':
         exit()
 
 
 def get_vacancies():
+    """Основная функция получения вакансий.
+    Из нее переходим к функциям возможных вариантов сбора вакансий"""
     global vacancies
     if len(vacancies) != 0:
         user_input = input('\nСписок вакансий не пустой. Очистить перед добавлением? (да/нет) ').lower().strip()
@@ -108,6 +109,7 @@ def get_vacancies():
 
 
 def filter_vacancies():
+    """Основная функция фильтрации вакансий"""
     global vacancies
     user_filters = get_filters()
     if set(user_filters) & set('123456') != set():
@@ -119,6 +121,7 @@ def filter_vacancies():
 
 
 def sort_vacancies():
+    """Основная функция сортировки вакансий"""
     global vacancies
     sort_param = get_sort_param()
     if sort_param == '1':
@@ -132,6 +135,7 @@ def sort_vacancies():
 
 
 def print_vacancies():
+    """Основная функция вывода вакансий в консоль"""
     user_count = input('\nСколько вакансий вывести?\n'
                        'Для вывода всех вакансий нажмите Enter\n')
     check_exit(user_count)
@@ -148,6 +152,7 @@ def print_vacancies():
 
 
 def write_vacancies_in_file():
+    """Основная функция записи вакансий в файл"""
     while True:
         user_file_name = input('Введите имя файла с расширением '
                                'или "отмена" для продолжения работы: ').lower().strip()
@@ -182,12 +187,15 @@ def write_vacancies_in_file():
 
 
 def remove_vacancies():
+    """Очищает список вакансий"""
     global vacancies
     vacancies.remove()
     print('-' * 10, 'Список вакансий очищен', '-' * 10)
 
 
 def get_vacancies_place():
+    """Определяет из какого ресурса будет получать вакансии.
+    Относится к функциям получения вакансий"""
     vacancies_place = input('\nОткуда будем загружать вакансии?\n'
                             'Чтобы совместить выбор, введите нужные номера без пробелов и знаков препинания.\n'
                             '1 - HeadHunter.ru; 2 – SuperJob.ru; 3 - из файла\n')
@@ -200,13 +208,8 @@ def get_vacancies_place():
 
 
 def get_filter_params(filters):
-    # user_filter_params = {'1-town': str,
-    #                       '2-keywords': str,
-    #                       '3-payment': int,
-    #                       '4-only_with_payment': bool,
-    #                       '5-distant_work': bool,
-    #                       '6-day_from': int,
-    #                       }
+    """Получает данные для фильтрации вакансий.
+    Используется при получении вакансий и при фильтрации вакансий"""
     user_filter_params = {}
 
     for item in filters:
@@ -237,8 +240,6 @@ def get_filter_params(filters):
             if only_with_payment != '':
                 if only_with_payment == 'да':
                     user_filter_params['only_with_payment'] = True
-                # elif only_with_payment == 'нет':
-                #     user_filter_params['only_with_payment'] = False
 
         if item == '5':
             distant_work = input('Только удаленная работа (да/нет): ')
@@ -247,8 +248,6 @@ def get_filter_params(filters):
                 if distant_work != '':
                     if distant_work == 'да':
                         user_filter_params['distant_work'] = True
-                    # elif distant_work == 'нет':
-                    #     user_filter_params['distant_work'] = False
 
         if item == '6':
             day_from = input('За сколько последних дней показать вакансии? ')
@@ -263,18 +262,24 @@ def get_filter_params(filters):
 
 
 def get_vacancies_from_hh(params):
+    """Получает вакансии с HH.
+    Относится к функциям получения вакансий"""
     hh_api = HeadHunterAPI()
     hh_vacancies = hh_api.get_vacancies(params)
     return hh_vacancies
 
 
 def get_vacancies_from_sj(params):
+    """Получает вакансии с SJ.
+    Относится к функциям получения вакансий"""
     sj_api = SuperJobAPI()
     sj_vacancies = sj_api.get_vacancies(params)
     return sj_vacancies
 
 
 def get_vacancies_from_file(params):
+    """Получает вакансии из файла.
+    Относится к функциям получения вакансий"""
     file_handler = get_file_for_read()
     if file_handler is not None:
         file_vacancies = file_handler.read_vacancies()
@@ -282,7 +287,10 @@ def get_vacancies_from_file(params):
         return file_vacancies
     return []
 
+
 def get_file_for_read():
+    """Получает название файла для чтения.
+    Относится к функциям получения вакансий"""
     is_good_file = False
     while not is_good_file:
         user_file_name = input('Введите имя файла с расширением '
@@ -315,7 +323,10 @@ def get_file_for_read():
     else:
         return None
 
+
 def print_files_list():
+    """Выводит доступные файлы для чтения.
+    Относится к функциям получения вакансий"""
     files_list = [f for f in listdir(DATA_DIR) if f.endswith('.json') or f.endswith('.xlsx')]
     if len(files_list) == 0:
         print('Доступных файлов нет')
@@ -325,6 +336,8 @@ def print_files_list():
 
 
 def filter_vacancies_by_params(vacancies_to_filter, params):
+    """Фильтрует вакансии по параметрам.
+    Относится к функциям фильтрации вакансий"""
     if params.get('town') is not None:
         vacancies_to_filter.filter_by_town(params['town'])
     if params.get('keywords') is not None:
@@ -341,6 +354,8 @@ def filter_vacancies_by_params(vacancies_to_filter, params):
 
 
 def get_filters():
+    """Получает пользовательский выбор набора фильтров.
+    Относится к функциям фильтрации вакансий"""
     filters = input('\nВыберите параметр, по которым хотите отфильтровать вакансии.\n'
                     'Чтобы совместить выбор, введите нужные номера без пробелов и знаков препинания.\n'
                     '1 - город работы\n'
@@ -352,13 +367,13 @@ def get_filters():
     check_exit(filters)
     return filters
 
+
 def get_sort_param():
+    """Получает пользовательский выбор параметра сортировки.
+    Относится к функциям сортировки вакансий"""
     sort_param = input('\nВыберите параметр, по которому будем сортировать вакансии.\n'
-                    '1 - по ЗП (от большей к меньшей)\n'
-                    '2 - по дате публикации (от новых к старым)\n')
+                       '1 - по ЗП (от большей к меньшей)\n'
+                       '2 - по дате публикации (от новых к старым)\n')
     check_exit(sort_param)
     return sort_param
 
-
-# get_vacancies_from_file([])
-user_interaction()
